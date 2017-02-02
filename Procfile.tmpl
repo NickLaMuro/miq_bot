@@ -1,4 +1,5 @@
 puma:            bundle exec rails s -p $PORT
+webhook_proxy:   bundle exec puma webhook_receiver.ru
 sidekiq:         bundle exec sidekiq -q miq_bot
 sidekiq_glacial: bundle exec sidekiq -q miq_bot_glacial
 travis_listener: bundle exec rake travis_event_listener:run
