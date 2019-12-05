@@ -89,6 +89,20 @@ module GithubService
       milestones_cache[fq_name] ||= Hash[service.list_milestones(fq_name, :state => :all).map { |m| [m.title, m.number] }]
     end
 
+    # Cache repositories for an hour, and fetch them if a list they doesn't
+    # exist for a given user
+    def org_repos(org = nil, *args)
+      @org_repos_cache         ||= {}
+      @org_repos_cache_timeout ||= {}
+
+      if @org_repos_cache[org].nil? || @org_repos_cache_timeout[org] < Time.zone.now
+        @org_repos_cache_timeout[org] = 1.hour.from_now
+        @org_repos_cache[org]         = service.org_repos(org, *args).map(&:name)
+      end
+
+      @org_repos_cache[org]
+    end
+
     def valid_milestone?(fq_name, milestone)
       milestones(fq_name).include?(milestone)
     end
