@@ -297,18 +297,34 @@ RSpec.describe GithubService::Commands::RunTest do
     context "multiple repos and test repos" do
       let(:repos)         { %w[Fryguy/more_core_extensions@feature linux_admin#123] }
       let(:test_repos)    { %w[manageiq-api manageiq-ui-classic] }
-      let(:command_value) { "#{test_repos.join(',')} including #{repos.join(',')}" }
 
-      it "sets @test_repos and @repos" do
-        expected_test_repos = %w[ManageIQ/manageiq-api ManageIQ/manageiq-ui-classic]
-        expected_repos      = %W[
+      let(:expected_test_repos) {
+        %w[ManageIQ/manageiq-api ManageIQ/manageiq-ui-classic]
+      }
+      let(:expected_repos) {
+        %W[
           Fryguy/more_core_extensions@feature
           ManageIQ/linux_admin#123
           #{issue_identifier}
         ]
+      }
 
-        expect(subject.test_repos).to eq expected_test_repos
-        expect(subject.repos).to      eq expected_repos
+      context "with no spaces" do
+        let(:command_value) { "#{test_repos.join(',')} including #{repos.join(',')}" }
+
+        it "sets @test_repos and @repos" do
+          expect(subject.test_repos).to eq expected_test_repos
+          expect(subject.repos).to      eq expected_repos
+        end
+      end
+
+      context "with spaces after commas" do
+        let(:command_value) { "#{test_repos.join(', ')} including #{repos.join(', ')}" }
+
+        it "sets @test_repos and @repos" do
+          expect(subject.test_repos).to eq expected_test_repos
+          expect(subject.repos).to      eq expected_repos
+        end
       end
     end
   end

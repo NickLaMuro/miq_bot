@@ -128,8 +128,8 @@ module GithubService
         @repos ||= []
         @repos  << "#{issue.repo_name}##{issue.number}"
 
-        @test_repos.map! { |repo_name| normalize_repo_name(repo_name) }
-        @repos.map!      { |repo_name| normalize_repo_name(repo_name) }
+        @test_repos.map! { |repo_name| normalize_repo_name(repo_name.strip) }
+        @repos.map!      { |repo_name| normalize_repo_name(repo_name.strip) }
       end
 
       def normalize_repo_name(repo)
