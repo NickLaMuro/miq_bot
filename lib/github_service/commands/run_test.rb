@@ -169,7 +169,7 @@ module GithubService
       # Clone repo (if needed) and initialize @rugged_repo
       def ensure_test_repo_clone
         repo_path = self.class.test_repo_clone_dir
-        if Dir.exist?(self.class.test_repo_clone_dir)
+        if Dir.exist?(repo_path)
           @rugged_repo = Rugged::Repository.new(repo_path)
         else
           url = self.class.test_repo_url
