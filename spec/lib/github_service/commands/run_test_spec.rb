@@ -209,6 +209,10 @@ RSpec.describe GithubService::Commands::RunTest do
                               :request_body  => pull_request_data,
                               :response_body => {"number" => 2345}.to_json
 
+      my_email = "NickLaMuro@loljustkidding.com"
+      github_service_add_stub :url           => "/users/NickLaMuro",
+                              :response_body => {"email" => my_email}.to_json
+
       subject.run_tests
     end
 
@@ -236,7 +240,7 @@ RSpec.describe GithubService::Commands::RunTest do
       last_commit    = repo.last_commit
 
       expect(last_commit.author[:name]).to     eq("NickLaMuro")
-      expect(last_commit.author[:email]).to    eq("no-name@example.com")
+      expect(last_commit.author[:email]).to    eq("NickLaMuro@loljustkidding.com")
       expect(last_commit.committer[:name]).to  eq("rspec_bot")
       expect(last_commit.committer[:email]).to eq("no_bot_email@example.com")
 

@@ -205,8 +205,8 @@ module GithubService
         index.write
 
         bot       = self.class.bot_name
-        author    = { :name => issuer, :email => "no-name@example.com", :time => Time.now.utc }
-        committer = { :name => bot,    :email => self.class.bot_email,  :time => Time.now.utc }
+        author    = { :name => issuer, :email => user_email(issuer),   :time => Time.now.utc }
+        committer = { :name => bot,    :email => self.class.bot_email, :time => Time.now.utc }
 
         Rugged::Commit.create(
           rugged_repo,
@@ -260,6 +260,10 @@ module GithubService
       # Don't need the credentials stuff since we are assuming https for this repo
       def git_fetch
         rugged_repo.remotes.each { |remote| rugged_repo.fetch(remote.name) }
+      end
+
+      def user_email(username)
+        GithubService.user(username).try(:email) || "no-name@example.com"
       end
     end
   end
