@@ -186,6 +186,95 @@ RSpec.describe GithubService::Commands::RunTest do
     end
   end
 
+  describe "#run_tests", :with_stub_cross_repo do
+    before do
+      subject.instance_variable_set(:@issuer,     command_issuer)
+      subject.instance_variable_set(:@repos,      %w[repo1 repo2])
+      subject.instance_variable_set(:@test_repos, %w[foo bar])
+
+      clear_previous_github_service_stubs!
+
+      pull_request_data = {
+        "base"  => "master",
+        "head"  => subject.branch_name,
+        "title" => "[BOT] Cross repo test run",
+        "body"  => <<~PR_BODY
+          From Pull Request:  ManageIQ/bar#1234
+          For User:           @NickLaMuro
+        PR_BODY
+      }.to_json
+
+      github_service_add_stub :url           => "/repos/ManageIQ/cross_repo-tests-remote/pulls",
+                              :method        => :post,
+                              :request_body  => pull_request_data,
+                              :response_body => {"number" => 2345}.to_json
+
+      subject.run_tests
+    end
+
+    it "clones the repo" do
+      expect(Dir.exist?(cross_repo_clone)).to be_truthy
+      expect(File.exist?(travis_yml_path)).to be_truthy
+    end
+
+    it "creates a new branch" do
+      branch = subject.branch_name
+      repo   = subject.rugged_repo
+
+      expect(repo.head.name.sub(/^refs\/heads\//, '')).to eq branch
+    end
+
+    it "updates the .travis.yml" do
+      content = YAML.load_file(travis_yml_path)
+
+      expect(content["env"]["global"]).to eq ["REPOS=repo1,repo2"]
+      expect(content["env"]["matrix"]).to eq ["TEST_REPO=foo", "TEST_REPO=bar"]
+    end
+
+    it "commits the changes" do
+      repo           = subject.rugged_repo
+      last_commit    = repo.last_commit
+      commit_content = repo.lookup(last_commit.tree.get_entry(".travis.yml")[:oid]).content
+
+      expect(last_commit.message).to eq <<~MSG
+        Running tests for NickLaMuro
+
+        From Pull Request:  ManageIQ/bar#1234
+      MSG
+
+      expect(commit_content).to include "- REPOS=repo1,repo2"
+      expect(commit_content).to include "- TEST_REPO=foo"
+      expect(commit_content).to include "- TEST_REPO=bar"
+    end
+
+    it "pushes the changes" do
+      Dir.mktmpdir do |dir|
+        # create a new clone to test the remote got the push
+        repo = Rugged::Repository.clone_at cross_repo_remote, dir
+        repo.remotes["origin"].fetch
+
+        branch_name    = subject.branch_name # branch name from cloned repo
+        branch         = repo.branches["origin/#{branch_name}"]
+        commit_content = repo.lookup(branch.target.tree.get_entry(".travis.yml")[:oid]).content
+
+        expect(branch).to_not be_nil
+        expect(branch.target.message).to eq <<~MSG
+          Running tests for NickLaMuro
+
+          From Pull Request:  ManageIQ/bar#1234
+        MSG
+
+        expect(commit_content).to include "- REPOS=repo1,repo2"
+        expect(commit_content).to include "- TEST_REPO=foo"
+        expect(commit_content).to include "- TEST_REPO=bar"
+      end
+    end
+
+    it "creates a pull request" do
+      github_service_stubs.verify_stubbed_calls
+    end
+  end
+
   describe "#parse_value (private)" do
     before do
       subject.send(:parse_value, command_value)
