@@ -195,11 +195,9 @@ module GithubService
         index.add('.travis.yml')
         index.write
 
-        # rubocop:disable: Rails/TimeZone
         bot       = self.class.bot_name
-        author    = { :name => issuer, :email => "no-name@example.com", :time => Time.now }
-        committer = { :name => bot,    :email => "#{bot}@manageiq.org", :time => Time.now }
-        # rubocop:enable: Rails/TimeZone
+        author    = { :name => issuer, :email => "no-name@example.com", :time => Time.now.utc }
+        committer = { :name => bot,    :email => "#{bot}@manageiq.org", :time => Time.now.utc }
 
         Rugged::Commit.create(
           rugged_repo,
