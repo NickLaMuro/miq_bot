@@ -105,7 +105,7 @@ module GithubService
       end
 
       def run_tests
-        clone_repo_if_necessary
+        ensure_test_repo_clone
         create_cross_repo_test_branch
         update_travis_yaml_content
         commit_travis_yaml_changes
@@ -167,7 +167,7 @@ module GithubService
       ##### run_tests steps #####
 
       # Clone repo (if needed) and initialize @rugged_repo
-      def clone_repo_if_necessary
+      def ensure_test_repo_clone
         repo_path = self.class.test_repo_clone_dir
         if Dir.exist?(self.class.test_repo_clone_dir)
           @rugged_repo = Rugged::Repository.new(repo_path)
