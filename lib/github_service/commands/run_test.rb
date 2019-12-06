@@ -142,7 +142,7 @@ module GithubService
           return false
         end
 
-        unless repos_valid?(@test_repos + @repos)
+        unless repos_valid?(@test_repos)
           issue.add_comment("@#{issuer} '#{value}' is an invalid repo, ignoring...")
 
           return false
