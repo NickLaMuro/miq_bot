@@ -28,35 +28,13 @@ module GithubService
     #   - `repos-to-test` is a list of repos to have tested
     #   - `extra-repos` is a list of repos (gems) to override in the bundle
     #
-    # Lists of repos should be comma delimited.
+    # each "lists of repos" should be comma delimited.
     #
-    # == Examples
+    # == Example
     #
-    # === In ManageIQ/manageiq PR #1234:
+    # In ManageIQ/manageiq PR #1234
     #
-    # The following command:
-    #
-    #   @miq-bot run-tests manageiq-ui-classic
-    #
-    # will create a commit with the .travis.yml changes:
-    #
-    #
-    #   @@ -14,6 +14,6 @@ matrix:
-    #      fast_finish: true
-    #    env:
-    #      global:
-    #   -  - REPOS=
-    #   +  - REPOS=ManageIQ/manageiq#12345
-    #      matrix:
-    #   -  - TEST_REPO=
-    #   +  - TEST_REPO=ManageIQ/manageiq-ui-classic
-    #
-    #
-    # === In ManageIQ/manageiq PR #1234
-    #
-    # The following command:
-    #
-    #   @miq-bot run-tests manageiq-api,manageiq-ui-classic \
+    #   @miq-bot run-tests manageiq-api,manageiq-ui-classic#5678 \
     #     including Fryguy/more_core_extensions@feature,Fryguy/linux_admin@feature
     #
     # will create a commit with the .travis.yml changes:
@@ -70,29 +48,11 @@ module GithubService
     #      matrix:
     #   -  - TEST_REPO=
     #   +  - TEST_REPO=ManageIQ/manageiq-api
-    #   +  - TEST_REPO=ManageIQ/manageiq-ui-classic
+    #   +  - TEST_REPO=ManageIQ/manageiq-ui-classic#5678
     #
     # TODO:  Handle the "self" case, where `manageiq` is also a TEST_REPO
     #
     # (maybe include a "self" helper as well?)
-    #
-    # === In ManageIQ/manageiq-ui-classic PR #1234:
-    #
-    # The following command:
-    #
-    #   @miq-bot run-tests manageiq#5678
-    #
-    # will create a commit with the .travis.yml changes:
-    #
-    #   @@ -14,6 +14,6 @@ matrix:
-    #      fast_finish: true
-    #    env:
-    #      global:
-    #   -  - REPOS=
-    #   +  - REPOS=manageiq#5678
-    #      matrix:
-    #   -  - TEST_REPO=
-    #   +  - TEST_REPO=manageiq-ui-classic#1234
     #
     class RunTest < Base
       # The user calling the command
