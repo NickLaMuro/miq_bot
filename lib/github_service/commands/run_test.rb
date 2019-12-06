@@ -95,7 +95,13 @@ module GithubService
 
       # The new branch name for this particular run of the command (uniq)
       def branch_name
-        @branch_name ||= "#{self.class.bot_name}-run-tests-#{issue.number}-#{SecureRandom.uuid}"
+        @branch_name ||= begin
+                           uuid     = SecureRandom.uuid
+                           bot_name = self.class.bot_name
+                           issue_id = "#{issue.repo_name}-#{issue.number}"
+
+                           "#{uuid}-#{bot_name}-run-tests-#{issue_id}"
+                         end
       end
 
       def run_tests
