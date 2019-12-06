@@ -93,6 +93,10 @@ module GithubService
         Settings.github_credentials.username
       end
 
+      def self.bot_email
+        Settings.github_credentials.email || "no_bot_email@example.com"
+      end
+
       # The new branch name for this particular run of the command (uniq)
       def branch_name
         @branch_name ||= begin
@@ -202,7 +206,7 @@ module GithubService
 
         bot       = self.class.bot_name
         author    = { :name => issuer, :email => "no-name@example.com", :time => Time.now.utc }
-        committer = { :name => bot,    :email => "#{bot}@manageiq.org", :time => Time.now.utc }
+        committer = { :name => bot,    :email => self.class.bot_email,  :time => Time.now.utc }
 
         Rugged::Commit.create(
           rugged_repo,

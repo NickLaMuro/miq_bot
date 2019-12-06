@@ -234,6 +234,12 @@ RSpec.describe GithubService::Commands::RunTest do
     it "commits the changes" do
       repo           = subject.rugged_repo
       last_commit    = repo.last_commit
+
+      expect(last_commit.author[:name]).to     eq("NickLaMuro")
+      expect(last_commit.author[:email]).to    eq("no-name@example.com")
+      expect(last_commit.committer[:name]).to  eq("rspec_bot")
+      expect(last_commit.committer[:email]).to eq("no_bot_email@example.com")
+
       commit_content = repo.lookup(last_commit.tree.get_entry(".travis.yml")[:oid]).content
 
       expect(last_commit.message).to eq <<~MSG
