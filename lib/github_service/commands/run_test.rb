@@ -89,7 +89,6 @@ module GithubService
                                  end
       end
 
-      # Name of the bot
       def self.bot_name
         Settings.github_credentials.username
       end
