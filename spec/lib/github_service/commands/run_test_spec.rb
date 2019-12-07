@@ -216,37 +216,41 @@ RSpec.describe GithubService::Commands::RunTest do
       subject.run_tests
     end
 
-    it "clones the repo" do
+    it "clones the repo as a bare repo" do
       expect(Dir.exist?(cross_repo_clone)).to be_truthy
-      expect(File.exist?(travis_yml_path)).to be_truthy
+      expect(File.exist?(travis_yml_path)).to be_falsey
     end
 
-    it "creates a new branch" do
+    it "creates a new branch (stays on master)" do
       branch = subject.branch_name
       repo   = subject.rugged_repo
 
-      expect(repo.head.name.sub(/^refs\/heads\//, '')).to eq branch
+      expect(repo.branches.map(&:name)).to include branch
+      expect(repo.head.name.sub(/^refs\/heads\//, '')).to eq "master"
     end
 
     it "updates the .travis.yml" do
-      content = YAML.load_file(travis_yml_path)
+      repo               = subject.rugged_repo
+      branch             = repo.branches["origin/#{subject.branch_name}"]
+      travis_yml_content = repo.blob_at(branch.target.oid, ".travis.yml").content
+      content            = YAML.safe_load(travis_yml_content)
 
       expect(content["env"]["global"]).to eq ["REPOS=repo1,repo2"]
       expect(content["env"]["matrix"]).to eq ["TEST_REPO=foo", "TEST_REPO=bar"]
     end
 
     it "commits the changes" do
-      repo           = subject.rugged_repo
-      last_commit    = repo.last_commit
+      repo   = subject.rugged_repo
+      commit = repo.branches[subject.branch_name].target
 
-      expect(last_commit.author[:name]).to     eq("NickLaMuro")
-      expect(last_commit.author[:email]).to    eq("NickLaMuro@loljustkidding.com")
-      expect(last_commit.committer[:name]).to  eq("rspec_bot")
-      expect(last_commit.committer[:email]).to eq("no_bot_email@example.com")
+      expect(commit.author[:name]).to     eq("NickLaMuro")
+      expect(commit.author[:email]).to    eq("NickLaMuro@loljustkidding.com")
+      expect(commit.committer[:name]).to  eq("rspec_bot")
+      expect(commit.committer[:email]).to eq("no_bot_email@example.com")
 
-      commit_content = repo.lookup(last_commit.tree.get_entry(".travis.yml")[:oid]).content
+      commit_content = repo.blob_at(commit.oid, ".travis.yml").content
 
-      expect(last_commit.message).to eq <<~MSG
+      expect(commit.message).to eq <<~MSG
         Running tests for NickLaMuro
 
         From Pull Request:  ManageIQ/bar#1234
@@ -265,7 +269,7 @@ RSpec.describe GithubService::Commands::RunTest do
 
         branch_name    = subject.branch_name # branch name from cloned repo
         branch         = repo.branches["origin/#{branch_name}"]
-        commit_content = repo.lookup(branch.target.tree.get_entry(".travis.yml")[:oid]).content
+        commit_content = repo.blob_at(branch.target.oid, ".travis.yml").content
 
         expect(branch).to_not be_nil
         expect(branch.target.message).to eq <<~MSG

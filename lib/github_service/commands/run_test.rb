@@ -55,6 +55,9 @@ module GithubService
     # (maybe include a "self" helper as well?)
     #
     class RunTest < Base
+      # Reference to the branch we are creating off of origin/master
+      attr_reader :branch_ref
+
       # The user calling the command
       attr_reader :issuer
 
@@ -177,33 +180,38 @@ module GithubService
           @rugged_repo = Rugged::Repository.new(repo_path)
         else
           url = self.class.test_repo_url
-          @rugged_repo = Rugged::Repository.clone_at(url, repo_path)
+          @rugged_repo = Rugged::Repository.clone_at(url, repo_path, :bare => true)
         end
         git_fetch
       end
 
       def create_cross_repo_test_branch
-        rugged_repo.create_branch(branch_name, "origin/master")
-        rugged_repo.checkout(branch_name)
+        @branch_ref = rugged_repo.create_branch(branch_name, "origin/master")
       end
 
+      # A lot of this is borrowed from some excellent work by Madhu:
+      #
+      #   https://github.com/ManageIQ/manageiq/blob/06de0607/lib/git_worktree.rb#L102-L110
+      #
       def update_travis_yaml_content
-        Dir.chdir(@rugged_repo.workdir) do
-          content = YAML.load_file(".travis.yml")
+        raw_yaml = rugged_repo.blob_at(branch_ref.target.oid, ".travis.yml").content
+        content  = YAML.safe_load(raw_yaml)
 
-          content["env"] = {} unless content["env"]
-          content["env"]["global"] = ["REPOS=#{repos.join(',')}"]
-          content["env"]["matrix"] = test_repos.map { |repo| "TEST_REPO=#{repo}" }
+        content["env"] = {} unless content["env"]
+        content["env"]["global"] = ["REPOS=#{repos.join(',')}"]
+        content["env"]["matrix"] = test_repos.map { |repo| "TEST_REPO=#{repo}" }
 
-          File.write('.travis.yml', content.to_yaml)
-        end
+        entry = {}
+        entry[:path]  = ".travis.yml"
+        entry[:oid]   = @rugged_repo.write(content.to_yaml, :blob)
+        entry[:mode]  = 0100644
+        entry[:mtime] = Time.now.utc
+
+        rugged_index.add(entry)
+        # rugged_index.write (don't do this...)
       end
 
       def commit_travis_yaml_changes
-        index = rugged_repo.index
-        index.add('.travis.yml')
-        index.write
-
         bot       = self.class.bot_name
         author    = { :name => issuer, :email => user_email(issuer),   :time => Time.now.utc }
         committer = { :name => bot,    :email => self.class.bot_email, :time => Time.now.utc }
@@ -212,9 +220,9 @@ module GithubService
           rugged_repo,
           :author     => author,
           :committer  => committer,
-          :parents    => [rugged_repo.last_commit].compact,
-          :tree       => index.write_tree(rugged_repo),
-          :update_ref => "HEAD",
+          :parents    => [branch_ref.target],
+          :tree       => rugged_index.write_tree(rugged_repo),
+          :update_ref => "refs/heads/#{branch_name}",
           :message    => <<~COMMIT_MSG
             Running tests for #{issuer}
 
@@ -264,6 +272,18 @@ module GithubService
 
       def user_email(username)
         GithubService.user(username).try(:email) || "no-name@example.com"
+      end
+
+      # Create a new Rugged::Index based off of "refs/remote/origin/master"
+      #
+      # Based off of GitWorktree in ManageIQ/manageiq
+      #
+      #   https://github.com/ManageIQ/manageiq/blob/06de0607/lib/git_worktree.rb#L395-L404
+      #
+      def rugged_index
+        @rugged_index ||= Rugged::Index.new.tap do |index|
+          index.read_tree(branch_ref.target.tree)
+        end
       end
     end
   end
