@@ -93,11 +93,6 @@ module GitRepoHelper
       repo
     end
 
-    def self.clone_at(url, dir, &block)
-      repo = new(dir, [])
-      repo.clone(url, &block)
-    end
-
     def initialize(repo_path, file_struct)
       @commit_count = 0
       @repo_path    = Pathname.new(repo_path)
@@ -134,12 +129,6 @@ module GitRepoHelper
       repo.remotes[name].push [repo.head.name]  # push current head to remote
     end
 
-    def checkout_b(branch, source = nil)
-      repo.create_branch(*[branch, source].compact)
-      repo.checkout branch
-      @last_commit = repo.last_commit
-    end
-
     # Commit with all changes added to the index
     #
     #   $ git add . && git commit -am "${msg}"
@@ -159,41 +148,6 @@ module GitRepoHelper
 
     def tag(tag_name)
       repo.tags.create tag_name, @last_commit
-    end
-
-    # Add a merge branch into current branch with `--no-ff`
-    #
-    # (AKA:  Merge a PR like on github)
-    #
-    #   $ git merge --no-ff --no-edit
-    #
-    # If `base_branch` is passed, use that, otherwise use `HEAD`
-    #
-    def merge(branch, base_branch = nil)
-      # Code is a combination of the examples found here:
-      #
-      #   - https://github.com/libgit2/rugged/blob/3de6a0a7/test/merge_test.rb#L4-L18
-      #   - http://violetzijing.is-programmer.com/2015/11/6/some_notes_about_rugged.187772.html
-      #   - https://stackoverflow.com/a/27290470
-      #
-      # In otherwords... not obvious how to do a `git merge --no-ff --no-edit`
-      # with rugged... le-sigh...
-      repo.checkout base_branch if base_branch
-
-      base        = (base_branch ? repo.branches[base_branch] : repo.head).target_id
-      topic       = repo.branches[branch].target_id
-      merge_index = repo.merge_commits(base, topic)
-
-      Rugged::Commit.create(
-        repo,
-        :message    => "Merged branch '#{branch}' into #{base_branch || current_branch_name}",
-        :parents    => [base, topic],
-        :tree       => merge_index.write_tree(repo),
-        :update_ref => "HEAD"
-      )
-
-      repo.checkout_head :strategy => :force
-      @last_commit = repo.last_commit
     end
 
     # Add (or update) a file in the repo, and optionally write content to it
