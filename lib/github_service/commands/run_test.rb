@@ -154,21 +154,7 @@ module GithubService
           return false
         end
 
-        unless repos_valid?(@test_repos)
-          issue.add_comment("@#{issuer} '#{value}' is an invalid repo, ignoring...")
-
-          return false
-        end
-
         true
-      end
-
-      REPO_ONLY_REGEXP = /(?:[^\/]+\/)?(?<REPO_NAME_ONLY>[^@#]+)/.freeze
-      def repos_valid?(repos)
-        repos.all? do |repo|
-          name_only = repo.match(REPO_ONLY_REGEXP)[:REPO_NAME_ONLY]
-          GithubService.org_repos(issue.organization_name).include?(name_only)
-        end
       end
 
       ##### run_tests steps #####

@@ -342,21 +342,4 @@ RSpec.describe GithubService::Commands::RunTest do
       end
     end
   end
-
-  describe "#repos_valid? (private)" do
-    it "returns true with all valid repos" do
-      repos = %w[ManageIQ/bar manageiq-ui-classic]
-      expect(subject.send(:repos_valid?, repos)).to be_truthy
-    end
-
-    it "returns false with an invalid repo" do
-      repos = %W[#{issue_identifier} manageiq-ui-classic ManageIQ/faker]
-      expect(subject.send(:repos_valid?, repos)).to be_falsey
-    end
-
-    it "supports parsing out the '@' and '#' identifiers" do
-      repos = %W[#{issue_identifier} manageiq-ui-classic@fine]
-      expect(subject.send(:repos_valid?, repos)).to be_truthy
-    end
-  end
 end
