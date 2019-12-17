@@ -65,14 +65,6 @@ module GithubServiceHelper
     end
   end
 
-  # Convenience wrapper for generating stubs for a particular /org/:org/repos
-  # GitHub API call
-  def github_service_stub_org_repos(org, repos)
-    res_body = repos.map { |repo| { "name" => repo } }
-    github_service_add_stub :url           => "/orgs/#{org}/repos?per_page=100",
-                            :response_body => res_body.to_json
-  end
-
   # Removes any previous stubs made.
   #
   # Useful when overriding a default stub higher up in a rspec context.
@@ -169,10 +161,8 @@ module GithubService
     #
     # Can be called manually if necessary to reset the test stubs
     def unset_service_vars!
-      @service                 = nil
-      @octokit_stubs           = nil
-      @org_repos_cache         = nil
-      @org_repos_cache_timeout = nil
+      @service       = nil
+      @octokit_stubs = nil
     end
 
     # A Faraday::Adapter::Test::Stubs instance to be used with the "test version"
