@@ -92,8 +92,6 @@ RSpec.describe GithubService::Commands::RunTest do
 
     github_service_add_stub :url             => member_check_url,
                             :response_status => 204
-
-    github_service_stub_org_repos "ManageIQ", ["manageiq-ui-classic", "bar"]
   end
 
   describe "#execute!" do
@@ -167,19 +165,16 @@ RSpec.describe GithubService::Commands::RunTest do
       end
     end
 
-    context "with an invalid command" do
+    context "with an unknown repo" do
       let(:command_value) { "fake-repo" }
 
-      it "adds a comment informing the command is being ignored by the bot" do
-        comment_body = {
-          "body" => "@NickLaMuro 'fake-repo' is an invalid repo, ignoring..."
-        }.to_json
-        github_service_add_stub :url           => comment_url,
-                                :method        => :post,
-                                :request_body  => comment_body,
-                                :response_body => {"id" => 1234}.to_json
-
-        run_execute!(:valid => false)
+      # We have determined that the bot doesn't need to validate this, and it
+      # will just fail on CI instead of trying to fail early here.
+      #
+      # We also lock down by org, so we don't need to handle for this command
+      # being abused.
+      it "it is still valid" do
+        run_execute!(:valid => true)
 
         github_service_stubs.verify_stubbed_calls
       end
