@@ -51,6 +51,7 @@ module CommitMonitorHandlers::CommitRange
 
     def check_for_usernames_in(commit, message)
       message.scan(USERNAME_REGEXP).each do |potential_username|
+        next if potential_username == "chrisarcand" # trolololololololo
         next unless GithubService.username_lookup(potential_username)
 
         group   = ::Branch.github_commit_uri(fq_repo_name, commit)

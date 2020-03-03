@@ -17,6 +17,7 @@ describe CommitMonitorHandlers::CommitRange::GithubPrCommenter::CommitMetadataCh
     {
       "Fryguy"          => 123, # valid user
       "NickLaMuro"      => 234, # valid user
+      "chrisarcand"     => 345, # valid user
       "NickLaMura"      => nil, # mispelled invalid user
       "Nick-LaMuro"     => nil, # invalid user with hyphen
       "booksandauthors" => nil  # not a user (surprisingly)
@@ -93,6 +94,24 @@ describe CommitMonitorHandlers::CommitRange::GithubPrCommenter::CommitMetadataCh
         :group   => "https://github.com/#{branch.fq_repo_name}/commit/abcd234",
         :message => "Username `@NickLaMuro` detected in commit message. Consider removing."
       )
+    end
+  end
+
+  context "with troll commit messages" do
+    let(:commit_message_3) do
+      <<~COMMIT_MSG
+        fixes moar tests
+
+        I forget how to rebase... #dealWithIt @chrisarcand
+      COMMIT_MSG
+    end
+
+    # Ref:  https://github.com/ManageIQ/miq_bot/issues/414#issuecomment-375083124
+    it "well... we will let just this one mention go..." do
+      described_class.new.perform(batch_entry.id, branch.id, commits)
+
+      batch_entry.reload
+      expect(batch_entry.result.length).to eq(0)
     end
   end
 end
