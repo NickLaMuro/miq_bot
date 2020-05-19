@@ -3,6 +3,7 @@ bugzilla_credentials:
   url:
   username:
   password:
+git_service_hostname_ssh_config: {}
 github_credentials:
   username:
   password:
