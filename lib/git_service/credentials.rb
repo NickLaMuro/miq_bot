@@ -20,6 +20,14 @@ module GitService
       @host_config = host_config
     end
 
+    # Generic method for finding hosts using what is available
+    #
+    # If @host_config is set, use that, otherwise use ssh-agent config
+    #
+    def self.find_for_user_and_host(username, hostname)
+      from_hash_config_for_host(hostname) || from_ssh_agent(username)
+    end
+
     def self.from_ssh_agent(username)
       Rugged::Credentials::SshKeyFromAgent.new(:username => username)
     end
